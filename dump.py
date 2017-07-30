@@ -3,7 +3,7 @@ from getpass import getpass
 from urllib.parse import urlsplit
 
 fburl = 'https://m.facebook.com'
-browser = selenium.webdriver.Chrome()
+browser = selenium.webdriver.Firefox()
 
 ######
 #login
