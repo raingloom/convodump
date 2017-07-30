@@ -3,7 +3,7 @@ from getpass import getpass
 from urllib.parse import urlsplit
 
 fburl = 'https://m.facebook.com'
-browser = selenium.webdriver.Firefox()
+browser = selenium.webdriver.Chrome()
 
 ######
 #login
@@ -26,7 +26,7 @@ pageNum=0
 while True:
     links=map(lambda e: e.get_attribute('href'),
               browser.find_elements_by_tag_name('a'))
-    threads=list(filter(lambda l: urlsplit(l).path.startswith('/messages/read'), links))
+    threads=list(filter(lambda l: str(urlsplit(l).path).startswith('/messages/read'), links))
     if len(threads)==0:
         #no more threads
         break
