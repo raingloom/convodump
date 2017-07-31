@@ -63,7 +63,7 @@ def pages_in_conversation(browser,url):
             browser.get(url)
 
 #reverses order and removes extra stuff
-def filtered_html_of_conversation_page(browser,url):
+def reverse_html_of_conversation_page(browser,url):
     browser.get(url)
     script='''
     return (function(){
@@ -104,7 +104,7 @@ def download_to_folder(browser,path):
             pdumphtml=os.path.join(convopath,'dump.html')
             fdumphtml=io.open(os.path.join(pdumphtml),mode='w')
             for convopage in pages_in_conversation(browser,conversation):
-                fdumphtml.write(filtered_html_of_conversation_page(browser,convopage))
+                fdumphtml.write(reverse_html_of_conversation_page(browser,convopage))
             fdumphtml.flush()
             fdumphtml.close()
             n+=1
