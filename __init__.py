@@ -1,3 +1,5 @@
+#TODO: rewrite emoji
+#TODO: remove extra `browser.get()`s to increase performance
 from getpass import getpass
 from urllib import parse as urlparse
 import os
@@ -7,6 +9,16 @@ import threading
 from queue import Queue
 
 fburl = 'https://m.facebook.com'
+
+def create_preferred_browser():
+    import selenium.webdriver
+    p=selenium.webdriver.FirefoxProfile()
+    p.set_preference('javascript.enabled', False)
+    return selenium.webdriver.Firefox(p)
+
+#TODO: use this in the downloader to queue failed convos for later
+def is_error_page(browser):
+    len(browser.find_elements_by_class('error'))!=0
 
 def interactive_login(browser,msg=""):
     #this is because we don't wanna deal
@@ -66,28 +78,28 @@ def pages_in_conversation(browser,url):
             url=nexturl
             browser.get(url)
 
-#reverses order and removes extra stuff
-def filter_html_pf_conversation_page(browser,url):
-    browser.get(url)
-    script='''
-    return (function(){
-        let l=document.getElementById('messageGroup').children[1].children;
-        let src="";
-        for (let i=l.length-1; i>=0; i--) {
-            src+=l[i].innerHTML;
-        }
-        return src;
-    })();
-    '''
-    return browser.execute_script(script)
+#WARNING: not necessarily portable apparently, what the fuck?
+jsfile=io.open(os.path.join(os.path.dirname(__file__),'filter.js'))
+
+js_source=jsfile.read()
+
+jsfile.close()
+del jsfile
+
+def inject_js(browser):
+    browser.execute_script(js_source)
+
+def get_rewrite_candidates(browser):
+    inject_js(browser)
+    return browser.execute_script('''return convodump.rewrite_candidates(document.getElementById('messageGroup').children[1])''')
+
 
 #shamelessly copied from stackoverflow
 #FIXME: this is definitely Python 2 code, that's bad
 class DownloadThread(threading.Thread):
-    def __init__(self, queue, destfolder):
+    def __init__(self, queue):
         super(DownloadThread, self).__init__()
         self.queue = queue
-        self.destfolder = destfolder
         self.daemon = True
 
     def run(self):
@@ -100,10 +112,7 @@ class DownloadThread(threading.Thread):
             self.queue.task_done()
 
     def download(self, url, path):
-        # change it to a different way if you require
-        name = url.split('/')[-1]
         urllib.urlretrieve(url, path)
-
 
 def is_redirect(url):
     return urlparse.urlsplit(url).path == '/l.php'
@@ -116,7 +125,6 @@ def echoto(s,p):
     f.write(s)
     f.flush()
     f.close()
-
 
 #TODO:resumable sessions
 def download_to_folder(browser,path):
