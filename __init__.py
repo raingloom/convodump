@@ -1,4 +1,3 @@
-import selenium.webdriver
 from getpass import getpass
 from urllib import parse as urlparse
 import os
