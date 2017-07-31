@@ -4,7 +4,7 @@ import os
 import io
 import urllib
 import threading
-from Queue import Queue
+from queue import Queue
 
 fburl = 'https://m.facebook.com'
 
@@ -60,13 +60,14 @@ def pages_in_conversation(browser,url):
             yield url
             break
         else:
-            nexturl=older[0].find_element_by_tag_name('a').get_attribute('href')
+            olderlink=older[0].find_element_by_tag_name('a')
+            nexturl=olderlink.get_attribute('href')
             yield url
             url=nexturl
             browser.get(url)
 
 #reverses order and removes extra stuff
-def reverse_html_of_conversation_page(browser,url):
+def filter_html_pf_conversation_page(browser,url):
     browser.get(url)
     script='''
     return (function(){
@@ -81,6 +82,7 @@ def reverse_html_of_conversation_page(browser,url):
     return browser.execute_script(script)
 
 #shamelessly copied from stackoverflow
+#FIXME: this is definitely Python 2 code, that's bad
 class DownloadThread(threading.Thread):
     def __init__(self, queue, destfolder):
         super(DownloadThread, self).__init__()
@@ -93,23 +95,21 @@ class DownloadThread(threading.Thread):
             url = self.queue.get()
             try:
                 self.download_url(url)
-            except Exception,e:
-                print "   Error: %s"%e
+            except Exception as e:
+                print( "   Error: %s"%e)
             self.queue.task_done()
 
-    def download_url(self, url):
+    def download(self, url, path):
         # change it to a different way if you require
         name = url.split('/')[-1]
-        dest = os.path.join(self.destfolder, name)
-        print( "[%s] Downloading %s -> %s"%(self.ident, url, dest))
-        urllib.urlretrieve(url, dest)
+        urllib.urlretrieve(url, path)
 
 
 def is_redirect(url):
     return urlparse.urlsplit(url).path == '/l.php'
 
 def deredirect_link(url):
-    return urlparse.parse_qs(urlparse.spliturl(url))['u'][0]    
+    return urlparse.parse_qs(urlparse.spliturl(url))['u'][0]
 
 def echoto(s,p):
     f=io.open(p,mode='w')
@@ -139,7 +139,8 @@ def download_to_folder(browser,path):
             pdumphtml=os.path.join(convopath,'dump.html')
             fdumphtml=io.open(os.path.join(pdumphtml),mode='w')
             for convopage in pages_in_conversation(browser,conversation):
-                fdumphtml.write(reverse_html_of_conversation_page(browser,convopage))
+                fdumphtml.write(
+                    filter_html_pf_conversation_page(browser,convopage))
             fdumphtml.flush()
             fdumphtml.close()
             n+=1
