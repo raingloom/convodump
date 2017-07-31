@@ -2,6 +2,9 @@ from getpass import getpass
 from urllib import parse as urlparse
 import os
 import io
+import urllib
+import threading
+from Queue import Queue
 
 fburl = 'https://m.facebook.com'
 
@@ -77,11 +80,43 @@ def reverse_html_of_conversation_page(browser,url):
     '''
     return browser.execute_script(script)
 
+#shamelessly copied from stackoverflow
+class DownloadThread(threading.Thread):
+    def __init__(self, queue, destfolder):
+        super(DownloadThread, self).__init__()
+        self.queue = queue
+        self.destfolder = destfolder
+        self.daemon = True
+
+    def run(self):
+        while True:
+            url = self.queue.get()
+            try:
+                self.download_url(url)
+            except Exception,e:
+                print "   Error: %s"%e
+            self.queue.task_done()
+
+    def download_url(self, url):
+        # change it to a different way if you require
+        name = url.split('/')[-1]
+        dest = os.path.join(self.destfolder, name)
+        print( "[%s] Downloading %s -> %s"%(self.ident, url, dest))
+        urllib.urlretrieve(url, dest)
+
+
+def is_redirect(url):
+    return urlparse.urlsplit(url).path == '/l.php'
+
+def deredirect_link(url):
+    return urlparse.parse_qs(urlparse.spliturl(url))['u'][0]    
+
 def echoto(s,p):
     f=io.open(p,mode='w')
     f.write(s)
     f.flush()
     f.close()
+
 
 #TODO:resumable sessions
 def download_to_folder(browser,path):
