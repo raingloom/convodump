@@ -1,6 +1,8 @@
 import selenium.webdriver
 from getpass import getpass
 from urllib import parse as urlparse
+import os
+import io
 
 fburl = 'https://m.facebook.com'
 
@@ -36,8 +38,8 @@ def conversation_pages(browser):
 
 def converstations_on_page(browser,url):
     browser.get(url)
-    links=map(lambda e: e.get_attribute('href'),
-              browser.find_elements_by_tag_name('a'))
+    links=list(map(lambda e: e.get_attribute('href'),
+              browser.find_elements_by_tag_name('a')))
     return filter(lambda l: str(urlsplit(l).path).startswith('/messages/read'), links)
 
 def conversation_id(url):
@@ -73,3 +75,29 @@ def filtered_html_of_conversation_page(browser,url):
     })();
     '''
     return browser.execute_script(script)
+
+def echoto(s,p):
+    f=io.open(p,mode='w')
+    f.write(s)
+    f.flush()
+    f.close()
+
+#TODO:resumable sessions
+def download_to_folder(browser,path):
+    n=1
+    os.mkdir(path)
+    for page in conversation_pages(browser):
+        for conversation in conversations_on_page(browser,conversation):
+            name=conversation_name(browser,conversation)
+            uid=conversation_id(conversation)
+            convopath=os.path.join(path,str(n))
+            echoto(name,os.path.join(convopath,'name'))
+            echoto(uid,os.path.join(convopath,'uid'))
+            os.mkdir(convopath)
+            pdumphtml=os.path.join(convopath,'dump.html')
+            fdumphtml=io.open(os.path.join(pdumphtml,mode='w'))
+            for convopage in pages_in_conversation(browser,conversation):
+                fdumphtml.write(filtered_html_of_conversation_page(browser,convopage))
+            fdumphtml.flush()
+            fdumphtml.close()
+            n+=1
