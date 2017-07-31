@@ -1,5 +1,5 @@
 # convodump
-is a Python library **in development** for downloading your conversations from Facebook without having to wait/go through their own process of requesting a backup. The main use case is for leaving facebook. You just start this, let it run overnight[1]
+is a Python library **in development** for downloading your conversations from Facebook without having to wait/go through their own process of requesting a backup. The main use case is for leaving facebook. You just start this, let it run overnight[1], you get a folder with all your data and the next day as you wake up and look out your window, shielding your eyes from the midday sun, you will feel that yes, today is the day, today you shake off your shackles, escape and never look back. But make sure you remember to help those still enprisoned, help them, share with them the keys to freedom.
 
 # requirements
 I use Arch Linux and Python 3 to build it, the exact pacman/AUR packages are:
