@@ -54,6 +54,7 @@ def pages_in_conversation(browser,url):
     while True:
         older=browser.find_elements_by_id('see_older')
         if len(older)==0:
+            yield url
             break
         else:
             nexturl=older[0].find_element_by_tag_name('a').get_attribute('href')
