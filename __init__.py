@@ -28,7 +28,7 @@ def conversation_pages(browser):
         browser.get(url)
         links=map(lambda e: e.get_attribute('href'),
                   browser.find_elements_by_tag_name('a'))
-        threads=list(filter(lambda l: str(urlsplit(l).path).startswith('/messages/read'), links))
+        threads=list(filter(lambda l: str(urlparse.urlsplit(l).path).startswith('/messages/read'), links))
         if len(threads)==0:
             #no more threads
             return
@@ -36,14 +36,14 @@ def conversation_pages(browser):
             yield url
         pageNum+=1
 
-def converstations_on_page(browser,url):
+def conversations_on_page(browser,url):
     browser.get(url)
     links=list(map(lambda e: e.get_attribute('href'),
               browser.find_elements_by_tag_name('a')))
-    return filter(lambda l: str(urlsplit(l).path).startswith('/messages/read'), links)
+    return filter(lambda l: str(urlparse.urlsplit(l).path).startswith('/messages/read'), links)
 
 def conversation_id(url):
-    return urlparse.parse_qs(urlparse.urlsplit(url).query)['tid']
+    return str(urlparse.parse_qs(urlparse.urlsplit(url).query)['tid'])
 
 def conversation_name(browser,url):
     browser.get(url)
@@ -57,8 +57,9 @@ def pages_in_conversation(browser,url):
         if len(older)==0:
             break
         else:
-            url=older[0].find_element_by_tag_name('a').get_attribute('href')
+            nexturl=older[0].find_element_by_tag_name('a').get_attribute('href')
             yield url
+            url=nexturl
             browser.get(url)
 
 #reverses order and removes extra stuff
@@ -85,17 +86,23 @@ def echoto(s,p):
 #TODO:resumable sessions
 def download_to_folder(browser,path):
     n=1
-    os.mkdir(path)
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        pass
     for page in conversation_pages(browser):
-        for conversation in conversations_on_page(browser,conversation):
+        for conversation in conversations_on_page(browser,page):
             name=conversation_name(browser,conversation)
             uid=conversation_id(conversation)
             convopath=os.path.join(path,str(n))
+            try:
+                os.mkdir(convopath)
+            except FileExistsError:
+                pass
             echoto(name,os.path.join(convopath,'name'))
             echoto(uid,os.path.join(convopath,'uid'))
-            os.mkdir(convopath)
             pdumphtml=os.path.join(convopath,'dump.html')
-            fdumphtml=io.open(os.path.join(pdumphtml,mode='w'))
+            fdumphtml=io.open(os.path.join(pdumphtml),mode='w')
             for convopage in pages_in_conversation(browser,conversation):
                 fdumphtml.write(filtered_html_of_conversation_page(browser,convopage))
             fdumphtml.flush()
